@@ -22,8 +22,7 @@
 	},
 	"kv_namespaces": [
 		{
-			"binding": "STORE",
-			"id": "STORE"
+			"binding": "STORE"
 		}
 	]
 }

@@ -17,15 +17,14 @@ A single `SHARED_SECRET` (a Worker secret) authenticates the local `amp` CLI. Al
 
 ## Setup
 
-1. Click **Deploy to Cloudflare** above (or run `pnpm install && wrangler kv namespace create STORE` + paste the id into `wrangler.jsonc`, then `pnpm run deploy`).
+1. Click **Deploy to Cloudflare** above, or `pnpm install && pnpm run deploy`. The `STORE` KV namespace is auto-created on first deploy (requires Wrangler ≥ 4.45).
 2. `wrangler secret put SHARED_SECRET` — whatever string you want.
 3. Open `https://<your-worker>.workers.dev/`, unlock with the secret, fill in the ampcode token and your provider keys.
-4. Point amp at the worker:
-   ```sh
-   export AMP_URL=https://<your-worker>.workers.dev
-   amp login
+4. Point amp at the worker by adding the URL to `~/.config/amp/settings.json`:
+   ```json
+   { "amp.url": "https://<your-worker>.workers.dev" }
    ```
-   On the page that opens, paste the same `SHARED_SECRET` and click **Authorize**. Amp stores it locally and uses it as its API key from then on.
+   Then run `amp login`. On the page that opens, paste the same `SHARED_SECRET` and click **Authorize**. Amp stores it locally and uses it as its API key from then on.
 
 ## Local development
 
