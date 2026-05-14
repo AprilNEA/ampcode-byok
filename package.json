@@ -1,6 +1,13 @@
 {
 	"name": "ampcode-byok",
 	"type": "module",
+	"cloudflare": {
+		"bindings": {
+			"SHARED_SECRET": {
+				"description": "The shared secret the local `amp` CLI must send as a Bearer token. Generate a strong value with `openssl rand -hex 32` and paste it here. You can rotate it later with `wrangler secret put SHARED_SECRET`."
+			}
+		}
+	},
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy --minify",
