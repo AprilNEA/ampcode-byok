@@ -4,28 +4,26 @@
  * One secret (`SHARED_SECRET`) authenticates the local amp CLI to this
  * worker. All other state — the real ampcode token and per-provider
  * base_url + api_key — lives in the `STORE` KV namespace and is set via
- * `PUT /__config/*` (or `wrangler kv key put`).
+ * `PUT /__config/*` (or the admin UI at `/`).
  *
- * Setup:
- *   wrangler kv namespace create STORE        # paste the id below
- *   wrangler secret put SHARED_SECRET         # the value amp CLI will send
+ * When deployed via the "Deploy to Cloudflare" button, the KV namespace
+ * is auto-created (empty `id`). Set `SHARED_SECRET` after deploy with:
+ *   wrangler secret put SHARED_SECRET
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "ampcode-byok",
 	"main": "src/index.tsx",
 	"compatibility_date": "2026-05-14",
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
-	"observability": {
-		"enabled": true
+	"observability": { "enabled": true },
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS"
 	},
-	"upload_source_maps": true,
 	"kv_namespaces": [
 		{
 			"binding": "STORE",
-			"id": "REPLACE_WITH_KV_NAMESPACE_ID"
+			"id": "STORE"
 		}
 	]
 }
