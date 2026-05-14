@@ -210,6 +210,106 @@ const ProviderSection = ({ name, hint }: { name: ProviderName; hint: string }) =
   </section>
 );
 
+export const LoginPage = ({
+  authToken,
+  callbackPort,
+  error,
+}: {
+  authToken: string;
+  callbackPort: string;
+  error?: string;
+}) => (
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Authorize amp CLI · ampcode-byok</title>
+      <style>{raw(CSS)}</style>
+    </head>
+    <body>
+      <main style="max-width: 480px;">
+        <header>
+          <h1>Authorize amp CLI</h1>
+          <p class="subtitle">
+            Your local <code>amp</code> CLI is asking this worker to issue it a
+            credential. After you authorize, amp will store the worker's
+            <code> SHARED_SECRET</code> as its API key and use it for every
+            subsequent request.
+          </p>
+        </header>
+
+        {error ? (
+          <section>
+            <p class="hint" style="color: var(--error-fg);">{error}</p>
+            <p class="hint">
+              Run <code>amp login</code> from your terminal — it will open the
+              correct URL with <code>authToken</code> and{" "}
+              <code>callbackPort</code> set.
+            </p>
+          </section>
+        ) : (
+          <section>
+            <p class="hint" id="login-status">Paste the worker's <code>SHARED_SECRET</code> to continue.</p>
+            <div class="row">
+              <input type="password" id="login-secret" placeholder="SHARED_SECRET" autocomplete="off" />
+            </div>
+            <div class="actions">
+              <button id="authorize">Authorize amp CLI</button>
+            </div>
+            <p class="hint" style="margin-top: 0.75rem;">
+              The browser will redirect to{" "}
+              <code>http://127.0.0.1:{callbackPort}/auth/callback</code> and
+              hand the secret to your local amp server.
+            </p>
+          </section>
+        )}
+      </main>
+      <div id="toast" class="toast"></div>
+      {error ? null : (
+        <script>{raw(`
+          (() => {
+            const authToken = ${JSON.stringify(authToken)};
+            const callbackPort = ${JSON.stringify(callbackPort)};
+            const $ = (id) => document.getElementById(id);
+            const status = $('login-status');
+            const toast = $('toast');
+
+            function showToast(msg, kind) {
+              toast.textContent = msg;
+              toast.className = 'toast show ' + (kind || '');
+              setTimeout(() => { toast.className = 'toast'; }, 1800);
+            }
+
+            $('login-secret').value = sessionStorage.getItem('byok_secret') || '';
+
+            async function authorize() {
+              const secret = $('login-secret').value.trim();
+              if (!secret) { showToast('secret required', 'error'); return; }
+              status.textContent = 'verifying secret…';
+              let r;
+              try { r = await fetch('/__config', { headers: { 'Authorization': 'Bearer ' + secret } }); }
+              catch (e) { status.textContent = 'network error'; return; }
+              if (!r.ok) {
+                status.textContent = r.status === 401 ? 'invalid secret' : ('error ' + r.status);
+                return;
+              }
+              sessionStorage.setItem('byok_secret', secret);
+              status.textContent = 'redirecting to amp CLI…';
+              const url = 'http://127.0.0.1:' + encodeURIComponent(callbackPort)
+                + '/auth/callback?accessToken=' + encodeURIComponent(secret)
+                + '&authToken=' + encodeURIComponent(authToken);
+              window.location.href = url;
+            }
+
+            $('authorize').addEventListener('click', authorize);
+            $('login-secret').addEventListener('keydown', (e) => { if (e.key === 'Enter') authorize(); });
+          })();
+        `)}</script>
+      )}
+    </body>
+  </html>
+);
+
 export const Page = () => (
   <html lang="en">
     <head>

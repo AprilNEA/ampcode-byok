@@ -77,10 +77,25 @@ curl https://ampcode-byok.example.workers.dev/__config \
 
 ## Point amp CLI at the worker
 
-Configure the local amp CLI so its server URL is your worker, and its
-token is the value of `SHARED_SECRET`. From amp's side it looks identical
-to talking to `ampcode.com`; the worker takes care of swapping in the
-right upstream credential per request.
+Set amp CLI's server URL to your worker (e.g. `AMP_URL=https://ampcode-byok.example.workers.dev` or the equivalent setting), then either:
+
+**a) `amp login`** — the worker intercepts amp's standard CLI login flow:
+
+1. amp opens `https://your-worker/auth/cli-login?authToken=…&callbackPort=…`
+2. The worker shows a one-screen page asking for `SHARED_SECRET`
+3. After verification, the browser is redirected to amp's local callback
+   (`http://127.0.0.1:{callbackPort}/auth/callback`) carrying
+   `SHARED_SECRET` as `accessToken`
+4. amp writes it to `~/.local/share/amp/secrets.json` and uses it as a
+   Bearer token from then on
+
+**b) Manual** — edit `~/.local/share/amp/secrets.json` directly so amp's
+`apiKey` for this server equals `SHARED_SECRET`.
+
+From amp's side the worker is indistinguishable from `ampcode.com`; the
+worker strips `SHARED_SECRET` from each request and swaps in either the
+stored ampcode token (for `ampcode.com` passthrough) or the matching
+provider key (for AI requests).
 
 ## Dev
 

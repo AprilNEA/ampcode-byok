@@ -1,5 +1,7 @@
 import { Hono } from "hono";
-import { Page } from "./ui";
+import { LoginPage, Page } from "./ui";
+
+const PUBLIC_GET_PATHS = new Set(["/", "/auth/cli-login", "/v1/login"]);
 
 type Bindings = {
   STORE: KVNamespace;
@@ -154,7 +156,7 @@ async function forward(
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.use("*", async (c, next) => {
-  if (c.req.method === "GET" && c.req.path === "/") {
+  if (c.req.method === "GET" && PUBLIC_GET_PATHS.has(c.req.path)) {
     return next();
   }
   if (!c.env.SHARED_SECRET) {
@@ -168,6 +170,25 @@ app.use("*", async (c, next) => {
 });
 
 app.get("/", (c) => c.html(<Page />));
+
+app.get("/auth/cli-login", (c) => {
+  const authToken = c.req.query("authToken") ?? "";
+  const callbackPort = c.req.query("callbackPort") ?? "";
+  const validAuthToken = /^[A-Za-z0-9+/=_-]+$/.test(authToken);
+  const validPort = /^\d{1,5}$/.test(callbackPort);
+  if (!validAuthToken || !validPort) {
+    return c.html(
+      <LoginPage
+        authToken=""
+        callbackPort=""
+        error="Missing or malformed authToken / callbackPort query parameters."
+      />,
+    );
+  }
+  return c.html(<LoginPage authToken={authToken} callbackPort={callbackPort} />);
+});
+
+app.get("/v1/login", (c) => c.redirect("/", 302));
 
 app.get("/__config", async (c) => {
   const [tok, ant, oai, gem] = await Promise.all([
