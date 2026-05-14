@@ -1,3 +1,0 @@
-# The shared secret that authenticates the local amp CLI to this worker.
-# Generate one with: openssl rand -hex 32
-SHARED_SECRET=

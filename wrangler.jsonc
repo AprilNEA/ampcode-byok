@@ -24,22 +24,12 @@
 		{
 			"binding": "STORE"
 		}
+	],
+	"secrets_store_secrets": [
+		{
+			"binding": "SHARED_SECRET",
+			"store_id": "REPLACE_WITH_STORE_ID",
+			"secret_name": "ampcode-byok-shared-secret"
+		}
 	]
-	/**
-	 * SHARED_SECRET defaults to a plain Worker secret declared in
-	 * `.dev.vars.example`; the Deploy button prompts the user for it
-	 * and the worker reads it as `env.SHARED_SECRET: string`.
-	 *
-	 * Alternatively, bind it to a Cloudflare Secrets Store entry — the
-	 * worker resolves either shape via `await binding.get()` at runtime,
-	 * so the application code does not change:
-	 *
-	 * "secrets_store_secrets": [
-	 *   {
-	 *     "binding": "SHARED_SECRET",
-	 *     "store_id": "<your-store-id>",
-	 *     "secret_name": "ampcode-byok-shared-secret"
-	 *   }
-	 * ]
-	 */
 }

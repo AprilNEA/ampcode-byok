@@ -4,7 +4,7 @@
 	"cloudflare": {
 		"bindings": {
 			"SHARED_SECRET": {
-				"description": "The shared secret the local `amp` CLI must send as a Bearer token. Generate a strong value with `openssl rand -hex 32` and paste it here. You can rotate it later with `wrangler secret put SHARED_SECRET`."
+				"description": "Cloudflare [Secrets Store](https://developers.cloudflare.com/secrets-store/) entry holding the secret the local `amp` CLI sends as a Bearer token. Generate the value with `openssl rand -hex 32`. The Deploy button lets you pick an existing entry or create a new one."
 			}
 		}
 	},

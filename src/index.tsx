@@ -5,9 +5,7 @@ const PUBLIC_GET_PATHS = new Set(["/", "/auth/cli-login", "/v1/login"]);
 
 type Bindings = {
   STORE: KVNamespace;
-  // Plain Worker secret (`wrangler secret put SHARED_SECRET`) -> string.
-  // Secrets Store binding -> SecretsStoreSecret (resolved via .get()).
-  SHARED_SECRET: string | SecretsStoreSecret;
+  SHARED_SECRET: SecretsStoreSecret;
 };
 
 type ProviderConfig = {
@@ -157,24 +155,16 @@ async function forward(
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-async function resolveSecret(
-  binding: string | SecretsStoreSecret | undefined,
-): Promise<string | null> {
-  if (!binding) return null;
-  if (typeof binding === "string") return binding || null;
-  try {
-    const v = await binding.get();
-    return v || null;
-  } catch {
-    return null;
-  }
-}
-
 app.use("*", async (c, next) => {
   if (c.req.method === "GET" && PUBLIC_GET_PATHS.has(c.req.path)) {
     return next();
   }
-  const expected = await resolveSecret(c.env.SHARED_SECRET);
+  let expected: string;
+  try {
+    expected = await c.env.SHARED_SECRET.get();
+  } catch {
+    return jsonError(500, "SHARED_SECRET not configured");
+  }
   if (!expected) {
     return jsonError(500, "SHARED_SECRET not configured");
   }

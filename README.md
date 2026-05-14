@@ -13,44 +13,55 @@
 | `POST /api/provider/google/v1beta/models/{action}` | your Gemini |
 | anything else | `ampcode.com` with your stored ampcode token |
 
-A single `SHARED_SECRET` (a Worker secret) authenticates the local `amp` CLI. All other state — the ampcode token and per-provider `base_url` + `api_key` — lives in a KV namespace and is set through the admin UI at `/`.
+`SHARED_SECRET` lives in [Cloudflare Secrets Store](https://developers.cloudflare.com/secrets-store/) and authenticates the local `amp` CLI to this worker. All other state — the ampcode token and per-provider `base_url` + `api_key` — lives in a KV namespace and is set through the admin UI at `/`.
 
 ## Setup
 
-1. Click **Deploy to Cloudflare** above, or `pnpm install && pnpm run deploy`. The `STORE` KV namespace is auto-created on first deploy (requires Wrangler ≥ 4.45).
-2. Generate and set the secret amp will use to authenticate to the worker:
-   ```sh
-   openssl rand -hex 32 | wrangler secret put SHARED_SECRET
-   ```
-   The Deploy button prompts for this value during deploy and shows the same hint inline.
-3. Open `https://<your-worker>.workers.dev/`, unlock with the secret, fill in the ampcode token and your provider keys.
-4. Point amp at the worker by adding the URL to `~/.config/amp/settings.json`:
+### Click the button
+
+The Deploy to Cloudflare button creates the KV namespace and lets you select or create a Secrets Store entry for `SHARED_SECRET`. Generate the value with `openssl rand -hex 32` and paste it when prompted. Done.
+
+### Or via CLI
+
+```sh
+pnpm install
+
+# Create a Secrets Store (skip if you already have one)
+wrangler secrets-store store create default --remote
+wrangler secrets-store store list --remote        # copy the store_id
+
+# Create the secret entry; paste `openssl rand -hex 32` when prompted
+wrangler secrets-store secret create <STORE_ID> \
+  --name ampcode-byok-shared-secret \
+  --scopes workers \
+  --remote
+
+# Paste <STORE_ID> into wrangler.jsonc → secrets_store_secrets[0].store_id
+pnpm run deploy        # also auto-creates the STORE KV namespace
+```
+
+### Then
+
+1. Open `https://<your-worker>.workers.dev/`, unlock with the same secret, fill in the ampcode token and your provider keys.
+2. Point amp at the worker by adding the URL to `~/.config/amp/settings.json`:
    ```json
    { "amp.url": "https://<your-worker>.workers.dev" }
    ```
    Then run `amp login`. On the page that opens, paste the same `SHARED_SECRET` and click **Authorize**. Amp stores it locally and uses it as its API key from then on.
 
-## Using Cloudflare Secrets Store (optional)
-
-`SHARED_SECRET` can also live in [Secrets Store](https://developers.cloudflare.com/secrets-store/) instead of being a per-Worker secret — useful if you rotate it from a central place or share it across Workers. Create the entry, then replace the comment block in `wrangler.jsonc` with:
-
-```jsonc
-"secrets_store_secrets": [
-  {
-    "binding": "SHARED_SECRET",
-    "store_id": "<your-store-id>",
-    "secret_name": "ampcode-byok-shared-secret"
-  }
-]
-```
-
-The worker's auth middleware resolves the binding through `await binding.get()`, so no code change is needed when switching between the two shapes.
-
 ## Local development
+
+Secrets Store has a separate local-mode namespace; mirror the production entry into it:
 
 ```sh
 pnpm install
-cp .dev.vars.example .dev.vars   # then fill in SHARED_SECRET
+
+# Same store_id you used in wrangler.jsonc, but without --remote.
+wrangler secrets-store secret create <STORE_ID> \
+  --name ampcode-byok-shared-secret \
+  --scopes workers \
+  --value "$(openssl rand -hex 32)"
+
 pnpm run dev
 ```
 
